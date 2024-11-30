@@ -1,6 +1,4 @@
 [submodule "external/libs"]
 	path = external/libs
 	url = git@github.com:BrandonMFong/libs.git
-[submodule "external/openssl"]
-	path = external/openssl
-	url = git@github.com:openssl/openssl.git
+
