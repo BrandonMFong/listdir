@@ -13,8 +13,10 @@
 #include <dirent.h>
 #include <libgen.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <errno.h>
 #include <pwd.h>
+#include <grp.h>
 
 #ifdef LINUX
 #include <linux/limits.h>
@@ -591,8 +593,8 @@ int PathQueryPrintPathDetail(
 	struct passwd * pws = getpwuid(owner);
 	printf("Owner: %s\n", pws->pw_name);
 
-	pws = getpwuid(group);
-	printf("Group: %s\n", pws->pw_name);
+	struct group * g = getgrgid(group);
+	printf("Group: %s\n", g->gr_name);
 
 	printf("Type: %s\n", StatModeTypeGetStringDescription(modetype));
 	printf("Full path: %s%s%s\n", color, fullpath, ANSI_COLOR_RESET);
