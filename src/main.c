@@ -22,8 +22,11 @@
 #include <linux/limits.h>
 #endif
 
+#define VERSION_STRING "0.2"
+
 #define ARG_FLAG_RECURSIVE 'r'
 #define ARG_FLAG_HELP 'h'
+#define ARG_FLAG_VERSION 'v'
 #define ARG_BRIEF_DESCRIPTION "--brief-description"
 
 #define STAT_MOD_TYPE_BDEV 'b'
@@ -96,6 +99,7 @@ typedef struct {
 	 */
 	PathList paths;
 	unsigned char showhelp : 1;
+	unsigned char showversion: 1;
 	unsigned char recursive : 1;
 	unsigned char briefDescription : 1;
 } Arguments;
@@ -105,6 +109,7 @@ void help(const char * toolname) {
 
 	printf("\nflags:\n");
 	printf("  [ %c ] : see help text\n", ARG_FLAG_HELP);
+	printf("  [ %c ] : see version\n", ARG_FLAG_VERSION);
 	printf("  [ %c ] : recursive\n", ARG_FLAG_RECURSIVE);
 
 	printf("\n");
@@ -121,11 +126,15 @@ void help(const char * toolname) {
 	printf("permissions:\n");
 	printf("  <owner><group><other>\n");
 
-	printf("\nCopyright © 2024 Brando. All rights reserved.\n");
+	printf("\nCopyright © %s Brando. All rights reserved.\n", __DATE__ + 7);
 }
 
 void BriefDescription() {
 	printf("lists directory\n");
+}
+
+void PrintVersion() {
+	printf("%s\n", VERSION_STRING);
 }
 
 int ArgumentsRead(int argc, char * argv[], Arguments * args);
@@ -141,6 +150,8 @@ int main(int argc, char * argv[]) {
 	if (!error) {
 		if (args.showhelp) {
 			help(argv[0]);
+		} else if (args.showversion) {
+			PrintVersion();
 		} else if (args.briefDescription) {
 			BriefDescription();
 		} else {
@@ -293,6 +304,8 @@ int ArgumentsReadFlagsFromArg(const char * arg, Arguments * args) {
 			args->recursive = true;
 		} else if (arg[i] == ARG_FLAG_HELP) {
 			args->showhelp = true;
+		} else if (arg[i] == ARG_FLAG_VERSION) {
+			args->showversion = true;
 		}
 	}
 
