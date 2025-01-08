@@ -523,9 +523,18 @@ int GetPrintablePath(const PathQuery * in, char * out, const Arguments * args) {
 	return 0;
 }
 
-int PathQueryPrintPathBrief(const char * path, const char modetype, const mode_t m, BFTime modtime, const char * sizebuf, const char * color, const char * linkdesc) {
+int PathQueryPrintPathBrief(
+	const char * path,
+	const char modetype,
+	const mode_t m, 
+	BFTime modtime,
+	const char * sizebuf,
+	const char * color,
+	const char * linkdesc
+) {
 	char dt[64];
 	TimeGetString(modtime, dt, sizeof(dt));
+
 	printf("| %-1c-%03o %-21s %10s %s%s%s%s", modetype, m, dt, sizebuf,
 			color,
 			path,
@@ -569,7 +578,8 @@ int PathQueryPrintPathDetail(
 	const char * sizebuf,
 	const char * color,
 	const char * linkdesc,
-	uid_t owner
+	uid_t owner,
+	gid_t group
 ) {
 	char res[2 << 8];
 	char fullpath[PATH_MAX];
@@ -580,6 +590,9 @@ int PathQueryPrintPathDetail(
 
 	struct passwd * pws = getpwuid(owner);
 	printf("Owner: %s\n", pws->pw_name);
+
+	pws = getpwuid(group);
+	printf("Group: %s\n", pws->pw_name);
 
 	printf("Type: %s\n", StatModeTypeGetStringDescription(modetype));
 	printf("Full path: %s%s%s\n", color, fullpath, ANSI_COLOR_RESET);
@@ -688,7 +701,7 @@ int PathQueryPrintPath(const PathQuery * path, const Arguments * args) {
 			sizebuf,
 			color,
 			strlen(linkdesc) == 0 ? "" : linkdesc,
-			st.st_uid);
+			st.st_uid, st.st_gid);
 	} else {
 		return PathQueryPrintPathBrief(
 			item,
