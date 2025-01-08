@@ -40,8 +40,10 @@ FILES =
 
 UNAME_S := $(shell uname -s)
 
-ifneq ($(CONFIG),test) # test
+ifeq ($(CONFIG),release) # test
 LIBRARIES += external/bin/libs/$(CONFIG)/bflibc/libbfc.a
+else
+LIBRARIES += external/bin/libs/$(CONFIG)/bflibc/libbfc-debug.a
 endif
 
 LINKS = $(BF_LIB_C_FLAGS)
@@ -66,7 +68,6 @@ BIN_NAME = listdir-test
 #ADDR_SANITIZER = -fsanitize=address
 FLAGS = $(CPPFLAGS) -DDEBUG -DTESTING -g -Isrc/ $(ADDR_SANITIZER) -Iexternal/bin/libs/debug
 LIBRARIES += \
-	external/bin/libs/debug/bflibc/libbfc-debug.a \
 	external/bin/libs/debug/bftest/libbftest-debug.a
 endif # ($(CONFIG),...)
 
