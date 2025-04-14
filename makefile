@@ -36,7 +36,7 @@ BIN_PATH = bin/$(CONFIG)
 BUILD_TYPE = executable
 SOURCE_EXT = c
 HEADER_EXT = h
-FILES = 
+FILES = compare
 
 UNAME_S := $(shell uname -s)
 

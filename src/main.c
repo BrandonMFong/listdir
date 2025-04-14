@@ -3,6 +3,7 @@
  * date: 5/15/24
  */
 
+#include "compare.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -22,12 +23,17 @@
 #include <linux/limits.h>
 #endif
 
-#define VERSION_STRING "0.2"
+#define VERSION_STRING "0.3"
 
 #define ARG_FLAG_RECURSIVE 'r'
 #define ARG_FLAG_HELP 'h'
 #define ARG_FLAG_VERSION 'v'
 #define ARG_BRIEF_DESCRIPTION "--brief-description"
+#define ARG_SORT "-sort"
+#define ARG_SORT_VALUE_TIME_MODIFIED "mod"
+#define ARG_SORT_VALUE_SIZE  "size"
+#define ARG_SORT_ASCENDING "--ascending"
+#define ARG_SORT_DESCENDING "--descending"
 
 #define STAT_MOD_TYPE_BDEV 'b'
 #define STAT_MOD_TYPE_CDEV 'c'
@@ -102,15 +108,23 @@ typedef struct {
 	unsigned char showversion: 1;
 	unsigned char recursive : 1;
 	unsigned char briefDescription : 1;
+	unsigned char sort : 2; // 0: no sort (default, sorts by name), 1: time last modified, 2: size
+	unsigned char sortDirection : 1; // 0: ascending, 1: descending
 } Arguments;
 
 void help(const char * toolname) {
-	printf("usage: %s [ -<flags> ] <path>\n", toolname);
+	printf("usage: %s [ -<flags> ] [ <args> ] <path>\n", toolname);
 
 	printf("\nflags:\n");
 	printf("  [ %c ] : see help text\n", ARG_FLAG_HELP);
 	printf("  [ %c ] : see version\n", ARG_FLAG_VERSION);
 	printf("  [ %c ] : recursive\n", ARG_FLAG_RECURSIVE);
+
+	printf("\narguments:\n");
+	printf("  [ %s <param>  [ %s | %s ]] : specify sort metrics. Default is sort by name\n", ARG_SORT_VALUE_TIME_MODIFIED, ARG_SORT_ASCENDING, ARG_SORT_DESCENDING);
+	printf("    param options:\n");
+	printf("      %s: sorts by modification time\n", ARG_SORT_VALUE_TIME_MODIFIED);
+	printf("      %s: sorts by size\n", ARG_SORT_VALUE_SIZE);
 
 	printf("\n");
 	printf("entry types:\n");
@@ -424,7 +438,17 @@ int ArgumentsRead(int argc, char * argv[], Arguments * args) {
 	for (int i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], ARG_BRIEF_DESCRIPTION)) {
 			args->briefDescription = true;
-
+		} else if (!strcmp(argv[i], ARG_SORT)) {
+			i++;
+			if (!strcmp(argv[i], ARG_SORT_VALUE_TIME_MODIFIED)) {
+				args->sort = 1;
+			} else if (!strcmp(argv[i], ARG_SORT_VALUE_SIZE)) {
+				args->sort = 2;
+			}
+		} else if (!strcmp(argv[i], ARG_SORT_ASCENDING)) {
+			args->sortDirection = 0;
+		} else if (!strcmp(argv[i], ARG_SORT_DESCENDING)) {
+			args->sortDirection = 1;
 		// if the first arg are flags
 		} else if ((i == 1) && (argv[i][0] == '-')) {
 			if (ArgumentsReadFlagsFromArg(argv[i], args)) {
@@ -731,30 +755,44 @@ int PathQueryPrintPath(const PathQuery * path, const Arguments * args) {
 int PathQueryPrintDir(const PathQuery * dir, const Arguments * args) {
 	if (!dir || !args) return 1;
 
-	char p[PATH_MAX];
-	PathQueryGetPath(dir, p);
+	PathQueryGetPath(dir, scanDirCallbackCWD);
 
 	struct dirent ** namelist = NULL;
-	int n = scandir(p, &namelist, NULL, alphasort);
+	int n = 0;
+	if (args->sort == 1) {
+		if (args->sortDirection == 0) {
+			n = scandir(scanDirCallbackCWD, &namelist, NULL, CompareScanDirTimeModifiedAscending);
+		} else {
+			n = scandir(scanDirCallbackCWD, &namelist, NULL, CompareScanDirTimeModifiedDescending);
+		}
+	} else if (args->sort == 2) {
+		if (args->sortDirection == 0) {
+			n = scandir(scanDirCallbackCWD, &namelist, NULL, CompareScanDirSizeAscending);
+		} else {
+			n = scandir(scanDirCallbackCWD, &namelist, NULL, CompareScanDirSizeDescending);
+		}
+	} else {
+		n = scandir(scanDirCallbackCWD, &namelist, NULL, alphasort);
+	}
 	if (n == -1) {
-		printf("error: couldn't scan dir %s\n", p);
+		printf("error: couldn't scan dir %s\n", scanDirCallbackCWD);
 		return 1;
 	}
 
 	bool shouldLabel = PathListGetSize(&args->paths) > 1;
 
 	if (shouldLabel) {
-		printf("\n%s:\n", p);
+		printf("\n%s:\n", scanDirCallbackCWD);
 	}
 
 	for (int i = 0; i < n; i++) {
 		if (strcmp(namelist[i]->d_name, ".") && strcmp(namelist[i]->d_name, "..")) {
 			char p[PATH_MAX];
-			snprintf(p, PATH_MAX, "%s/%s", p, namelist[i]->d_name);
+			snprintf(scanDirCallbackCWD, PATH_MAX, "%s/%s", scanDirCallbackCWD, namelist[i]->d_name);
 
 			PathQuery path;
 			if (PathQueryCreateChild(dir, &path, namelist[i]->d_name)) {
-				printf("error: couldn't create path query for %s\n", p);
+				printf("error: couldn't create path query for %s\n", scanDirCallbackCWD);
 				continue;
 			}
 
@@ -762,7 +800,7 @@ int PathQueryPrintDir(const PathQuery * dir, const Arguments * args) {
 				// TODO: make some recursive thing
 			} else {
 				if (PathQueryPrintPath(&path, args)) {
-					printf("error: path couldn't be worked on %s\n", p);
+					printf("error: path couldn't be worked on %s\n", scanDirCallbackCWD);
 				}
 			}
 
