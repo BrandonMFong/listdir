@@ -23,7 +23,7 @@
 #include <linux/limits.h>
 #endif
 
-#define VERSION_STRING "0.3"
+#define VERSION_STRING "0.3.1"
 
 #define ARG_FLAG_RECURSIVE 'r'
 #define ARG_FLAG_HELP 'h'
@@ -121,7 +121,7 @@ void help(const char * toolname) {
 	printf("  [ %c ] : recursive\n", ARG_FLAG_RECURSIVE);
 
 	printf("\narguments:\n");
-	printf("  [ %s <param>  [ %s | %s ]] : specify sort metrics. Default is sort by name\n", ARG_SORT_VALUE_TIME_MODIFIED, ARG_SORT_ASCENDING, ARG_SORT_DESCENDING);
+	printf("  [ %s <param>  [ %s | %s ]] : specify sort metrics. Default is sort by name\n", ARG_SORT, ARG_SORT_ASCENDING, ARG_SORT_DESCENDING);
 	printf("    param options:\n");
 	printf("      %s: sorts by modification time\n", ARG_SORT_VALUE_TIME_MODIFIED);
 	printf("      %s: sorts by size\n", ARG_SORT_VALUE_SIZE);
